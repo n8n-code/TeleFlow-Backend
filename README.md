@@ -218,39 +218,39 @@ for every matching event with automatic retry (3 attempts, exponential backoff).
 ### Chat Events
 | Event | Description | Status |
 |-------|-------------|--------|
-| `chat.created` | New chat/dialog appeared | 📋 Planned |
-| `chat.updated` | Chat metadata changed | 📋 Planned |
-| `chat.deleted` | Chat removed | 📋 Planned |
-| `chat.member_joined` | Member joined a chat | 📋 Planned |
-| `chat.member_left` | Member left a chat | 📋 Planned |
+| `chat.created` | New chat/dialog appeared | ✅ Dispatched (incoming updates) |
+| `chat.updated` | Chat metadata changed | ✅ Dispatched (incoming updates) |
+| `chat.deleted` | Chat removed | ✅ Dispatched (incoming updates) |
+| `chat.member_joined` | Member joined a chat | ✅ Dispatched (incoming + join API) |
+| `chat.member_left` | Member left a chat | ✅ Dispatched (incoming + leave API) |
 
 ### Group Events
 | Event | Description | Status |
 |-------|-------------|--------|
-| `group.created` | New group created | 📋 Planned |
-| `group.updated` | Group settings changed | 📋 Planned |
-| `group.deleted` | Group deleted | 📋 Planned |
-| `group.member_added` | Member added to group | 📋 Planned |
-| `group.member_removed` | Member removed from group | 📋 Planned |
-| `group.admin_changed` | Group admin rights changed | 📋 Planned |
+| `group.created` | New group created | ✅ Dispatched (incoming updates) |
+| `group.updated` | Group settings changed | ✅ Dispatched (incoming updates) |
+| `group.deleted` | Group deleted | ✅ Dispatched (incoming updates) |
+| `group.member_added` | Member added to group | ✅ Dispatched (incoming + join API) |
+| `group.member_removed` | Member removed from group | ✅ Dispatched (incoming + leave API) |
+| `group.admin_changed` | Group admin rights changed | ✅ Dispatched (incoming updates) |
 
 ### Channel Events
 | Event | Description | Status |
 |-------|-------------|--------|
-| `channel.created` | New channel created | 📋 Planned |
-| `channel.updated` | Channel settings changed | 📋 Planned |
-| `channel.deleted` | Channel deleted | 📋 Planned |
-| `channel.post_published` | New post published in channel | 📋 Planned |
+| `channel.created` | New channel created | ✅ Dispatched (incoming updates) |
+| `channel.updated` | Channel settings changed | ✅ Dispatched (incoming updates) |
+| `channel.deleted` | Channel deleted | ✅ Dispatched (incoming updates) |
+| `channel.post_published` | New post published in channel | ✅ Dispatched (UpdateNewChannelMessage) |
 
 ### User Events
 | Event | Description | Status |
 |-------|-------------|--------|
-| `user.status_changed` | User online/offline status changed | 📋 Planned |
-| `user.typing` | User started typing | 📋 Planned |
-| `user.profile_updated` | User profile info changed | 📋 Planned |
+| `user.status_changed` | User online/offline status changed | ✅ Dispatched (incoming updates) |
+| `user.typing` | User started typing | ✅ Dispatched (incoming updates) |
+| `user.profile_updated` | User profile info changed | ✅ Dispatched (incoming updates) |
 
 > **✅ Dispatched** = event is wired and fires end-to-end (session lifecycle + API-triggered message operations + incoming messages).
-> **📋 Planned** = event type is defined in the schema but not yet wired to GramJS handlers. Subscribe now — they'll activate automatically once wired.
+> **✅ Dispatched** = wired end-to-end. Session + Message events fire from API calls AND incoming GramJS updates. Chat/Group/Channel/User events fire from incoming MTProto updates (join/leave/admin/typing/status/profile/channel post).
 
 ### Webhook Payload
 

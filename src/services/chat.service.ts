@@ -2,6 +2,7 @@ import { Api } from 'telegram/tl/index.js';
 import { sessionManager } from '../telegram/session-manager.js';
 import { Errors } from '../utils/errors.js';
 import { createChildLogger } from '../utils/logger.js';
+import { emitEvent } from '../events/emit.js';
 import type { TelegramChat } from '../types/index.js';
 
 const log = createChildLogger({ module: 'chat-service' });
@@ -104,6 +105,8 @@ export async function joinChat(sessionId: string, chatId: string) {
     );
 
     log.info({ sessionId, chatId }, 'Joined chat');
+    emitEvent('chat.member_joined', sessionId, { chatId });
+    emitEvent('group.member_added', sessionId, { chatId });
     return { joined: true, chatId };
   } catch (err) {
     log.error(err, 'Failed to join chat');
@@ -119,6 +122,8 @@ export async function leaveChat(sessionId: string, chatId: string) {
     );
 
     log.info({ sessionId, chatId }, 'Left chat');
+    emitEvent('chat.member_left', sessionId, { chatId });
+    emitEvent('group.member_removed', sessionId, { chatId });
     return { left: true, chatId };
   } catch (err) {
     log.error(err, 'Failed to leave chat');
