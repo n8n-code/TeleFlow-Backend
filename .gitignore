@@ -49,3 +49,8 @@ sessions/
 
 # Docker
 .docker/
+
+# Showcase video project (built locally, not part of the backend repo)
+showcase-video/
+teleflow_fulltest.sh
+teleflow_runtests.sh

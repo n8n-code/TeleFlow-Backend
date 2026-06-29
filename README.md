@@ -8,6 +8,8 @@
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/typescript-5.x-blue.svg)](https://www.typescriptlang.org)
 
+<img src="./assets/showcase.gif" alt="TeleFlow-Backend showcase" width="600" />
+
 </div>
 
 ---
