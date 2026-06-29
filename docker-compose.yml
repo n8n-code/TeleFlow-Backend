@@ -1,6 +1,10 @@
 services:
   teleflow:
-    build: .
+    # Use the prebuilt image from GHCR (built by .github/workflows/ci.yml on push to main).
+    # Tag 'latest' tracks the default branch; pin to a specific tag (e.g. :v0.1.0) or
+    # sha (e.g. @sha256:...) for reproducible deployments.
+    image: ghcr.io/n8n-code/teleflow-backend:latest
+    pull_policy: always
     container_name: teleflow-backend
     restart: unless-stopped
     ports:
