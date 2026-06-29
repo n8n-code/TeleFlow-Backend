@@ -1,0 +1,52 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Flow gradient: cyan bright → cyan → cyan deep -->
+    <linearGradient id="tf-flow" x1="64" y1="448" x2="448" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0B7C82"/>
+      <stop offset="50%" stop-color="#22E0E8"/>
+      <stop offset="100%" stop-color="#7AF3F8"/>
+    </linearGradient>
+    <!-- Amber gradient for node B (Telegram destination) -->
+    <linearGradient id="tf-amber" x1="384" y1="64" x2="448" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFD27A"/>
+      <stop offset="100%" stop-color="#FFB347"/>
+    </linearGradient>
+    <!-- Glow filter -->
+    <filter id="tf-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <!-- Subtle radial backdrop -->
+    <radialGradient id="tf-bg" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#0E131E"/>
+      <stop offset="100%" stop-color="#02030A"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Rounded square backdrop -->
+  <rect width="512" height="512" rx="96" fill="url(#tf-bg)"/>
+
+  <!-- Flow path: sweeping curve from bottom-left node to top-right node -->
+  <path d="M96 416 C 184 304, 328 192, 416 96"
+        stroke="url(#tf-flow)"
+        stroke-width="18"
+        stroke-linecap="round"
+        filter="url(#tf-glow)"
+        opacity="0.95"/>
+
+  <!-- Node A (bottom-left) — cyan ring (origin / your app) -->
+  <g filter="url(#tf-glow)">
+    <circle cx="96" cy="416" r="40" fill="#02030A" stroke="#22E0E8" stroke-width="13"/>
+    <circle cx="96" cy="416" r="15" fill="#7AF3F8"/>
+  </g>
+
+  <!-- Node B (top-right) — amber ring (destination / Telegram) with paper-plane glyph -->
+  <g filter="url(#tf-glow)">
+    <circle cx="416" cy="96" r="40" fill="#02030A" stroke="#FFB347" stroke-width="13"/>
+    <!-- paper plane -->
+    <path d="M404 108 L432 88 L421 102 L415 99 Z" fill="url(#tf-amber)"/>
+  </g>
+</svg>
