@@ -5,6 +5,11 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+# Install build tools needed for native addons (e.g. bufferutil/utf-8-validate
+# from ws/@fastify/websocket) on alpine + non-amd64 arches where no prebuilt
+# binary exists and node-gyp must compile from source.
+RUN apk add --no-cache python3 make g++
+
 # Copy package files
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/

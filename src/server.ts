@@ -40,6 +40,12 @@ declare module 'fastify' {
       reply: import('fastify').FastifyReply,
     ) => Promise<void>;
   }
+
+  // Allow routes to mark themselves public via `config: { public: true }`
+  // so the global authenticate preHandler can skip them.
+  interface FastifyContextConfig {
+    public?: boolean;
+  }
 }
 
 declare module '@fastify/jwt' {

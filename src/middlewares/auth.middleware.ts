@@ -26,9 +26,17 @@ export async function authenticate(
   request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
-  // Skip auth for public routes
+  // Skip auth for public routes (path-based, e.g. /health, /version, /docs)
   const isPublic = PUBLIC_ROUTES.some((route) => request.url.startsWith(route));
   if (isPublic) {
+    return;
+  }
+
+  // Skip auth for routes explicitly marked public via route `config: { public: true }`.
+  // NOTE: setting route-level `preHandler: []` does NOT override this global hook —
+  // Fastify merges route preHandlers with global ones. Use the config flag instead.
+  const routeConfig = (request.routeOptions?.config ?? {}) as { public?: boolean };
+  if (routeConfig.public) {
     return;
   }
 
@@ -78,8 +86,12 @@ export async function authenticate(
 // ─── Auth plugin ─────────────────────────────────────────────────
 
 async function authPluginFn(fastify: FastifyInstance): Promise<void> {
-  // Decorate request with user property
-  fastify.decorateRequest('user', null as unknown as RequestUser);
+  // Decorate request with user property.
+  // Guard: @fastify/jwt already decorates `request.user` at registration,
+  // so calling decorateRequest again throws FST_ERR_DEC_ALREADY_PRESENT.
+  if (!fastify.hasRequestDecorator('user')) {
+    fastify.decorateRequest('user', null as unknown as RequestUser);
+  }
 
   // Decorate fastify with authenticate function for route-level usage
   fastify.decorate('authenticate', authenticate);

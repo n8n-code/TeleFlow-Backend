@@ -11,7 +11,9 @@ export default async function authRoutes(fastify: FastifyInstance): Promise<void
       security: [],
       ...loginJsonSchema,
     },
-    preHandler: [], // Override global auth — this route is public
+    // Mark this route public so the global authenticate preHandler skips it.
+    // (Route-level preHandler: [] does NOT override global hooks in Fastify.)
+    config: { public: true },
     handler: handleLogin,
   });
 
