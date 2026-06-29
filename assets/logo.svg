@@ -46,7 +46,13 @@
   <!-- Node B (top-right) — amber ring (destination / Telegram) with paper-plane glyph -->
   <g filter="url(#tf-glow)">
     <circle cx="416" cy="96" r="40" fill="#02030A" stroke="#FFB347" stroke-width="13"/>
-    <!-- paper plane -->
-    <path d="M404 108 L432 88 L421 102 L415 99 Z" fill="url(#tf-amber)"/>
+    <!-- paper plane (Telegram-style), centered & scaled to fit node -->
+    <g transform="translate(402, 83) scale(1.25)">
+      <path d="M21.5 2.5 L2.5 11.2 C 1.6 11.6, 1.7 12.9, 2.6 13.2 L8 14.8 L10.5 21 C 10.8 21.8, 11.9 21.8, 12.2 21 L13.8 16.5 L19 20 C 19.9 20.6, 21.1 19.9, 21 18.8 L21.5 2.5 Z"
+            fill="url(#tf-amber)"
+            stroke="#FFB347"
+            stroke-width="0.6"
+            stroke-linejoin="round"/>
+    </g>
   </g>
 </svg>
