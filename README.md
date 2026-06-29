@@ -193,16 +193,95 @@ GET /api/v1/ws        # WebSocket
 
 ## Event Types
 
+TeleFlow defines 28 event types across 6 categories. Subscribe to specific events
+or use the `*` wildcard to receive all of them. Webhooks deliver a signed POST
+for every matching event with automatic retry (3 attempts, exponential backoff).
+
 ### Session Events
-- `session.connected` / `session.disconnected`
-- `session.authorized` / `session.expired`
+| Event | Description | Status |
+|-------|-------------|--------|
+| `session.created` | Login flow started, code sent to phone | ✅ Dispatched |
+| `session.connected` | Session connected to MTProto | ✅ Dispatched |
+| `session.disconnected` | Session disconnected | ✅ Dispatched |
+| `session.authorized` | Login (code or 2FA password) succeeded | ✅ Dispatched |
+| `session.deleted` | Session removed | ✅ Dispatched |
 
 ### Message Events
-- `message.created` / `message.edited` / `message.deleted`
-- `message.read` / `message.reaction`
+| Event | Description | Status |
+|-------|-------------|--------|
+| `message.received` | New incoming message (via GramJS NewMessage) | ✅ Dispatched |
+| `message.sent` | Outgoing message sent via API | ✅ Dispatched |
+| `message.edited` | Message edited via API | ✅ Dispatched |
+| `message.deleted` | Message(s) deleted via API | ✅ Dispatched |
+| `message.read` | Chat marked as read via API | ✅ Dispatched |
 
 ### Chat Events
-- `chat.joined` / `chat.left` / `chat.updated`
+| Event | Description | Status |
+|-------|-------------|--------|
+| `chat.created` | New chat/dialog appeared | 📋 Planned |
+| `chat.updated` | Chat metadata changed | 📋 Planned |
+| `chat.deleted` | Chat removed | 📋 Planned |
+| `chat.member_joined` | Member joined a chat | 📋 Planned |
+| `chat.member_left` | Member left a chat | 📋 Planned |
+
+### Group Events
+| Event | Description | Status |
+|-------|-------------|--------|
+| `group.created` | New group created | 📋 Planned |
+| `group.updated` | Group settings changed | 📋 Planned |
+| `group.deleted` | Group deleted | 📋 Planned |
+| `group.member_added` | Member added to group | 📋 Planned |
+| `group.member_removed` | Member removed from group | 📋 Planned |
+| `group.admin_changed` | Group admin rights changed | 📋 Planned |
+
+### Channel Events
+| Event | Description | Status |
+|-------|-------------|--------|
+| `channel.created` | New channel created | 📋 Planned |
+| `channel.updated` | Channel settings changed | 📋 Planned |
+| `channel.deleted` | Channel deleted | 📋 Planned |
+| `channel.post_published` | New post published in channel | 📋 Planned |
+
+### User Events
+| Event | Description | Status |
+|-------|-------------|--------|
+| `user.status_changed` | User online/offline status changed | 📋 Planned |
+| `user.typing` | User started typing | 📋 Planned |
+| `user.profile_updated` | User profile info changed | 📋 Planned |
+
+> **✅ Dispatched** = event is wired and fires end-to-end (session lifecycle + API-triggered message operations + incoming messages).
+> **📋 Planned** = event type is defined in the schema but not yet wired to GramJS handlers. Subscribe now — they'll activate automatically once wired.
+
+### Webhook Payload
+
+Every webhook delivery includes a signed POST body:
+
+```json
+{
+  "id": "V1StGXRK_ZYdJsl",
+  "type": "message.received",
+  "sessionId": "cmqz4sw0f...",
+  "timestamp": "2026-06-29T20:30:09.222Z",
+  "data": { ... }
+}
+```
+
+**Headers sent:**
+| Header | Description |
+|--------|-------------|
+| `X-TeleFlow-Event` | Event type (e.g. `message.sent`) |
+| `X-TeleFlow-Delivery-Id` | Unique delivery ID for idempotency |
+| `X-TeleFlow-Signature` | HMAC-SHA256 hex of body (only if `secret` set) |
+
+**Verify signature:**
+```js
+const crypto = require('crypto');
+const expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+// Compare with X-TeleFlow-Signature header (timing-safe)
+```
+
+**Retry policy:** 3 attempts with backoff `1s → 3s → 10s`. Delivery records
+(status, response, duration, attempts) are stored in the `webhook_deliveries` table.
 
 ## Error Format
 
