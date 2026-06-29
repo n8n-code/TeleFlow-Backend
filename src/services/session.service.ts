@@ -7,6 +7,7 @@ import { encrypt, decrypt } from '../utils/crypto.js';
 import { config } from '../config/index.js';
 import { createChildLogger } from '../utils/logger.js';
 import { Errors } from '../utils/errors.js';
+import { emitEvent } from '../events/emit.js';
 import type { SessionLoginState } from '../types/index.js';
 
 const log = createChildLogger({ module: 'session-service' });
@@ -38,6 +39,8 @@ export async function createSession(
     });
 
     log.info({ sessionId: session.id }, 'Session created, code sent');
+
+    emitEvent('session.created', session.id, { phoneNumber });
 
     return {
       sessionId: session.id,
@@ -91,6 +94,8 @@ export async function verifyCode(
 
     log.info({ sessionId }, 'Session verified and logged in');
 
+    emitEvent('session.authorized', sessionId, { method: 'code' });
+
     return { sessionId, step: 'LOGGED_IN' };
   } catch (err) {
     if (err instanceof RPCError && err.errorMessage === 'SESSION_PASSWORD_NEEDED') {
@@ -140,6 +145,8 @@ export async function verifyPassword(
     });
 
     log.info({ sessionId }, 'Session verified with 2FA password');
+
+    emitEvent('session.authorized', sessionId, { method: 'password' });
 
     return { sessionId, step: 'LOGGED_IN' };
   } catch (err) {
@@ -251,6 +258,8 @@ export async function deleteSession(id: string): Promise<void> {
 
   await prisma.session.delete({ where: { id } });
   log.info({ sessionId: id }, 'Session deleted');
+
+  emitEvent('session.deleted', id, {});
 }
 
 // ─── Connect Session ─────────────────────────────────────────────
@@ -279,6 +288,8 @@ export async function connectSession(id: string): Promise<void> {
   });
 
   log.info({ sessionId: id }, 'Session connected');
+
+  emitEvent('session.connected', id, {});
 }
 
 // ─── Disconnect Session ──────────────────────────────────────────
@@ -296,6 +307,8 @@ export async function disconnectSession(id: string): Promise<void> {
   });
 
   log.info({ sessionId: id }, 'Session disconnected');
+
+  emitEvent('session.disconnected', id, {});
 }
 
 // ─── Export Session ──────────────────────────────────────────────

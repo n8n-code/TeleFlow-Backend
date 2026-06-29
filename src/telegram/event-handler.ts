@@ -26,7 +26,7 @@ export function registerEventHandlers(
 
       const teleflowEvent: TeleFlowEvent = {
         id: nanoid(),
-        type: 'message.created',
+        type: 'message.received',
         sessionId,
         timestamp: new Date().toISOString(),
         data: {

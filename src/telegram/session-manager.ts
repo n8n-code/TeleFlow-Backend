@@ -1,6 +1,8 @@
 import type { TelegramClient } from 'telegram';
 import { createChildLogger } from '../utils/logger.js';
 import { Errors } from '../utils/errors.js';
+import { registerEventHandlers } from './event-handler.js';
+import { emitEvent } from '../events/emit.js';
 
 const log = createChildLogger({ module: 'session-manager' });
 
@@ -19,10 +21,15 @@ class SessionManager {
     return client;
   }
 
-  /** Stores a client instance for a given session ID. */
+  /** Stores a client instance for a given session ID and wires event handlers. */
   addClient(sessionId: string, client: TelegramClient): void {
     this.clients.set(sessionId, client);
     log.info({ sessionId }, 'Client added to session manager');
+
+    // Wire GramJS events → TeleFlow event pipeline → webhooks
+    registerEventHandlers(sessionId, client, (event) => {
+      emitEvent(event.type, sessionId, event.data);
+    });
   }
 
   /** Disconnects and removes a client from the manager. */

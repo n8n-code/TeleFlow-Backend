@@ -2,6 +2,7 @@ import { Api } from 'telegram/tl/index.js';
 import { sessionManager } from '../telegram/session-manager.js';
 import { Errors } from '../utils/errors.js';
 import { createChildLogger } from '../utils/logger.js';
+import { emitEvent } from '../events/emit.js';
 import type { TelegramMessage } from '../types/index.js';
 import type {
   SendMessageInput,
@@ -43,7 +44,9 @@ export async function sendMessage(params: SendMessageInput) {
     });
 
     log.info({ sessionId: params.sessionId, chatId: params.chatId }, 'Message sent');
-    return formatMessage(result as Api.Message);
+    const formatted = formatMessage(result as Api.Message);
+    emitEvent('message.sent', params.sessionId, { ...formatted });
+    return formatted;
   } catch (err) {
     log.error(err, 'Failed to send message');
     throw Errors.telegramError('Failed to send message', (err as Error).message);
@@ -59,7 +62,9 @@ export async function editMessage(params: EditMessageInput) {
     });
 
     log.info({ sessionId: params.sessionId, messageId: params.messageId }, 'Message edited');
-    return formatMessage(result as Api.Message);
+    const formatted = formatMessage(result as Api.Message);
+    emitEvent('message.edited', params.sessionId, { ...formatted });
+    return formatted;
   } catch (err) {
     log.error(err, 'Failed to edit message');
     throw Errors.telegramError('Failed to edit message', (err as Error).message);
@@ -75,6 +80,7 @@ export async function deleteMessages(params: DeleteMessageInput) {
       { sessionId: params.sessionId, messageIds: params.messageIds },
       'Messages deleted',
     );
+    emitEvent('message.deleted', params.sessionId, { deletedIds: params.messageIds });
     return { deletedIds: params.messageIds };
   } catch (err) {
     log.error(err, 'Failed to delete messages');
@@ -174,6 +180,7 @@ export async function markAsRead(params: ReadMessagesInput) {
     await client.markAsRead(params.chatId);
 
     log.info({ sessionId: params.sessionId, chatId: params.chatId }, 'Messages marked as read');
+    emitEvent('message.read', params.sessionId, { chatId: params.chatId });
     return { read: true, chatId: params.chatId };
   } catch (err) {
     log.error(err, 'Failed to mark messages as read');

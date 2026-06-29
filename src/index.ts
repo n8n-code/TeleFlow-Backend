@@ -5,12 +5,16 @@ import { sessionManager } from './telegram/session-manager.js';
 import { config } from './config/index.js';
 import { logger } from './utils/logger.js';
 import { connectSession } from './services/session.service.js';
+import { ensureWebhookBridge } from './events/emit.js';
 
 // ─── Main ────────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
   // Connect to database
   await connectDatabase();
+
+  // Wire the event → webhook delivery bridge (must be before any session connects)
+  ensureWebhookBridge();
 
   // Build Fastify server
   const server = await buildServer();
