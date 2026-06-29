@@ -27,10 +27,49 @@ export function registerEventHandlers(
   client: TelegramClient,
   onEvent: (event: TeleFlowEvent) => void,
 ): void {
+  // ─── Dedup state ─────────────────────────────────────────────────
+  // Track recently-seen (eventKey) → timestamp, to suppress duplicate
+  // events that GramJS fires for the same underlying MTProto update.
+  const seen = new Map<string, number>();
+  const DEDUP_WINDOW_MS = 5000; // 5s window
+
+  /** Returns true if this event key was seen recently (within DEDUP_WINDOW_MS). */
+  function isDuplicate(key: string): boolean {
+    const now = Date.now();
+    const last = seen.get(key);
+    if (last !== undefined && now - last < DEDUP_WINDOW_MS) {
+      return true; // duplicate within window
+    }
+    seen.set(key, now);
+    return false;
+  }
+
+  // Periodically prune old entries to avoid unbounded growth
+  setInterval(() => {
+    const cutoff = Date.now() - DEDUP_WINDOW_MS * 2;
+    for (const [k, t] of seen) {
+      if (t < cutoff) seen.delete(k);
+    }
+  }, 30000).unref?.();
+
+  // Per-user status throttle: only emit user.status_changed at most once
+  // every 30s per user (Telegram spams these on rapid online/offline).
+  const lastStatusEmit = new Map<string, number>();
+  const STATUS_THROTTLE_MS = 30000;
+
   // ─── New (incoming) Message ──────────────────────────────────────
   client.addEventHandler(
     (event: NewMessageEvent) => {
       const message = event.message;
+      // Dedup by chatId+messageId — GramJS sometimes fires NewMessage twice
+      // (once via UpdateNewMessage, once via UpdateNewChannelMessage for channels)
+      const dedupKey = `msg:${message.chatId?.toString() ?? ''}:${message.id}`;
+      if (isDuplicate(dedupKey)) return;
+
+      // Detect channel/supergroup messages and ALSO emit channel.post_published
+      // (so channel subscribers get it), without double-firing message.received.
+      const isChannel = message.peerId instanceof Api.PeerChannel;
+
       onEvent({
         id: cryptoRandomId(),
         type: 'message.received',
@@ -46,6 +85,22 @@ export function registerEventHandlers(
           replyToMsgId: message.replyTo?.replyToMsgId,
         },
       });
+
+      if (isChannel) {
+        onEvent({
+          id: cryptoRandomId(),
+          type: 'channel.post_published',
+          sessionId,
+          timestamp: new Date().toISOString(),
+          data: {
+            messageId: message.id,
+            chatId: message.chatId?.toString() ?? '',
+            senderId: message.senderId?.toString() ?? '',
+            text: message.message ?? '',
+            date: message.date,
+          },
+        });
+      }
     },
     new NewMessage({}),
   );
@@ -204,43 +259,35 @@ export function registerEventHandlers(
     new Raw({ types: [Api.UpdateChannelParticipant] }),
   );
 
-  // New channel message = channel post published
-  client.addEventHandler(
-    (update: Api.UpdateNewChannelMessage) => {
-      const message = update.message;
-      if (message instanceof Api.Message) {
-        onEvent({
-          id: cryptoRandomId(),
-          type: 'channel.post_published',
-          sessionId,
-          timestamp: new Date().toISOString(),
-          data: {
-            messageId: message.id,
-            chatId: message.chatId?.toString() ?? '',
-            senderId: message.senderId?.toString() ?? '',
-            text: message.message ?? '',
-            date: message.date,
-          },
-        });
-      }
-    },
-    new Raw({ types: [Api.UpdateNewChannelMessage] }),
-  );
+  // New channel message → channel.post_published
+  // NOTE: GramJS fires NewMessage for channel posts too, and the NewMessage
+  // handler above already emits channel.post_published when peerId is a
+  // PeerChannel. We deliberately do NOT register a separate Raw handler for
+  // UpdateNewChannelMessage here, because it would double-fire the event.
 
-  // User status changed (online/offline)
+  // User status changed (online/offline) — throttled per user (30s)
   client.addEventHandler(
     (update: Api.UpdateUserStatus) => {
+      const userId = String(update.userId);
       const status = update.status;
       let statusText = 'offline';
       if (status instanceof Api.UserStatusOnline) statusText = 'online';
       else if (status instanceof Api.UserStatusOffline) statusText = 'offline';
       else if (status instanceof Api.UserStatusRecently) statusText = 'recently';
+
+      // Throttle: at most one status_changed per user per 30s. Telegram
+      // spams these (online/offline flapping), which floods webhooks.
+      const now = Date.now();
+      const last = lastStatusEmit.get(userId) ?? 0;
+      if (now - last < STATUS_THROTTLE_MS) return;
+      lastStatusEmit.set(userId, now);
+
       onEvent({
         id: cryptoRandomId(),
         type: 'user.status_changed',
         sessionId,
         timestamp: new Date().toISOString(),
-        data: { userId: String(update.userId), status: statusText },
+        data: { userId, status: statusText },
       });
     },
     new Raw({ types: [Api.UpdateUserStatus] }),
