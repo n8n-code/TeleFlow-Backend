@@ -4,7 +4,6 @@ import { z } from 'zod';
 
 export const loginSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  role: z.enum(['admin', 'user']).default('user'),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
@@ -17,7 +16,6 @@ export const loginJsonSchema = {
     required: ['name'],
     properties: {
       name: { type: 'string' as const, minLength: 1 },
-      role: { type: 'string' as const, enum: ['admin', 'user'], default: 'user' },
     },
   },
   response: {
