@@ -21,7 +21,7 @@ function parseWebhook(row: Record<string, unknown>): WebhookConfig {
 
 // ─── Service Methods ─────────────────────────────────────────────
 
-export async function createWebhook(data: CreateWebhookInput): Promise<WebhookConfig> {
+export async function createWebhook(data: CreateWebhookInput, userId: string): Promise<WebhookConfig> {
   try {
     const secret = data.secret ?? generateSecret();
     const webhook = await prisma.webhook.create({
@@ -30,6 +30,7 @@ export async function createWebhook(data: CreateWebhookInput): Promise<WebhookCo
         events: JSON.stringify(data.events),
         secret,
         isActive: true,
+        userId,
       },
     });
 
@@ -41,9 +42,10 @@ export async function createWebhook(data: CreateWebhookInput): Promise<WebhookCo
   }
 }
 
-export async function getAllWebhooks(): Promise<WebhookConfig[]> {
+export async function getAllWebhooks(userId: string): Promise<WebhookConfig[]> {
   try {
     const webhooks = await prisma.webhook.findMany({
+      where: { userId },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -54,11 +56,11 @@ export async function getAllWebhooks(): Promise<WebhookConfig[]> {
   }
 }
 
-export async function getWebhookById(id: string): Promise<WebhookConfig> {
+export async function getWebhookById(id: string, userId: string): Promise<WebhookConfig> {
   try {
     const webhook = await prisma.webhook.findUnique({ where: { id } });
 
-    if (!webhook) {
+    if (!webhook || webhook.userId !== userId) {
       throw Errors.notFound('Webhook');
     }
 
@@ -73,10 +75,11 @@ export async function getWebhookById(id: string): Promise<WebhookConfig> {
 export async function updateWebhook(
   id: string,
   data: UpdateWebhookInput,
+  userId: string,
 ): Promise<WebhookConfig> {
   try {
     const existing = await prisma.webhook.findUnique({ where: { id } });
-    if (!existing) {
+    if (!existing || existing.userId !== userId) {
       throw Errors.notFound('Webhook');
     }
 
@@ -100,10 +103,10 @@ export async function updateWebhook(
   }
 }
 
-export async function deleteWebhook(id: string): Promise<{ deleted: boolean; id: string }> {
+export async function deleteWebhook(id: string, userId: string): Promise<{ deleted: boolean; id: string }> {
   try {
     const existing = await prisma.webhook.findUnique({ where: { id } });
-    if (!existing) {
+    if (!existing || existing.userId !== userId) {
       throw Errors.notFound('Webhook');
     }
 

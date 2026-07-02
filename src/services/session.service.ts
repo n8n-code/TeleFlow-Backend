@@ -17,9 +17,10 @@ const log = createChildLogger({ module: 'session-service' });
 export async function createSession(
   name: string,
   phoneNumber: string,
+  userId: string,
 ): Promise<SessionLoginState> {
   const session = await prisma.session.create({
-    data: { name, phoneNumber },
+    data: { name, phoneNumber, userId },
   });
 
   const client = createTelegramClient();
@@ -65,9 +66,10 @@ export async function verifyCode(
   sessionId: string,
   phoneCode: string,
   phoneCodeHash: string,
+  userId: string,
 ): Promise<SessionLoginState> {
   const dbSession = await prisma.session.findUnique({ where: { id: sessionId } });
-  if (!dbSession) throw Errors.sessionNotFound(sessionId);
+  if (!dbSession || dbSession.userId !== userId) throw Errors.sessionNotFound(sessionId);
 
   const client = sessionManager.getClient(sessionId);
 
@@ -115,9 +117,10 @@ export async function verifyCode(
 export async function verifyPassword(
   sessionId: string,
   password: string,
+  userId: string,
 ): Promise<SessionLoginState> {
   const dbSession = await prisma.session.findUnique({ where: { id: sessionId } });
-  if (!dbSession) throw Errors.sessionNotFound(sessionId);
+  if (!dbSession || dbSession.userId !== userId) throw Errors.sessionNotFound(sessionId);
 
   const client = sessionManager.getClient(sessionId);
 
@@ -162,6 +165,7 @@ export async function verifyPassword(
 export async function importSession(
   name: string,
   sessionString: string,
+  userId: string,
 ): Promise<{ sessionId: string }> {
   const client = createTelegramClient(sessionString);
   await client.connect();
@@ -178,6 +182,7 @@ export async function importSession(
         isActive: true,
         isAuthorized: true,
         lastConnected: new Date(),
+        userId,
       },
     });
 
@@ -198,8 +203,9 @@ export async function importSession(
 
 // ─── Get All Sessions ────────────────────────────────────────────
 
-export async function getSessions() {
+export async function getSessions(userId: string) {
   const sessions = await prisma.session.findMany({
+    where: { userId },
     select: {
       id: true,
       name: true,
@@ -222,7 +228,7 @@ export async function getSessions() {
 
 // ─── Get Single Session ──────────────────────────────────────────
 
-export async function getSession(id: string) {
+export async function getSession(id: string, userId: string) {
   const session = await prisma.session.findUnique({
     where: { id },
     select: {
@@ -233,10 +239,11 @@ export async function getSession(id: string) {
       isAuthorized: true,
       createdAt: true,
       lastConnected: true,
+      userId: true,
     },
   });
 
-  if (!session) throw Errors.sessionNotFound(id);
+  if (!session || session.userId !== userId) throw Errors.sessionNotFound(id);
 
   return {
     ...session,
@@ -248,9 +255,9 @@ export async function getSession(id: string) {
 
 // ─── Delete Session ──────────────────────────────────────────────
 
-export async function deleteSession(id: string): Promise<void> {
+export async function deleteSession(id: string, userId: string): Promise<void> {
   const session = await prisma.session.findUnique({ where: { id } });
-  if (!session) throw Errors.sessionNotFound(id);
+  if (!session || session.userId !== userId) throw Errors.sessionNotFound(id);
 
   if (sessionManager.isConnected(id)) {
     await sessionManager.removeClient(id);
@@ -264,14 +271,14 @@ export async function deleteSession(id: string): Promise<void> {
 
 // ─── Connect Session ─────────────────────────────────────────────
 
-export async function connectSession(id: string): Promise<void> {
+export async function connectSession(id: string, userId: string): Promise<void> {
   if (sessionManager.isConnected(id)) {
     log.debug({ sessionId: id }, 'Session already connected');
     return;
   }
 
   const session = await prisma.session.findUnique({ where: { id } });
-  if (!session) throw Errors.sessionNotFound(id);
+  if (!session || session.userId !== userId) throw Errors.sessionNotFound(id);
   if (!session.sessionString) {
     throw Errors.badRequest('Session has no stored session string — login first');
   }
@@ -294,7 +301,10 @@ export async function connectSession(id: string): Promise<void> {
 
 // ─── Disconnect Session ──────────────────────────────────────────
 
-export async function disconnectSession(id: string): Promise<void> {
+export async function disconnectSession(id: string, userId: string): Promise<void> {
+  const session = await prisma.session.findUnique({ where: { id } });
+  if (!session || session.userId !== userId) throw Errors.sessionNotFound(id);
+
   if (!sessionManager.isConnected(id)) {
     throw Errors.sessionNotConnected(id);
   }
@@ -313,9 +323,9 @@ export async function disconnectSession(id: string): Promise<void> {
 
 // ─── Export Session ──────────────────────────────────────────────
 
-export async function exportSession(id: string): Promise<{ sessionString: string }> {
+export async function exportSession(id: string, userId: string): Promise<{ sessionString: string }> {
   const session = await prisma.session.findUnique({ where: { id } });
-  if (!session) throw Errors.sessionNotFound(id);
+  if (!session || session.userId !== userId) throw Errors.sessionNotFound(id);
   if (!session.sessionString) {
     throw Errors.badRequest('Session has no stored session string');
   }

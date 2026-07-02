@@ -16,7 +16,7 @@ export async function handleLogin(
   const signJwt = (payload: { sub: string; role: string }, options?: { expiresIn?: string }) =>
     request.server.jwt.sign(payload, options);
 
-  const result = await authService.login(parsed.name, parsed.role, signJwt);
+  const result = await authService.login(parsed.name, 'user', signJwt);
 
   success(reply, result, 201);
 }

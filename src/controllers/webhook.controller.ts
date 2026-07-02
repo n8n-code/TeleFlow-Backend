@@ -7,10 +7,10 @@ import * as webhookService from '../services/webhook.service.js';
 // ─── Get All Webhooks ────────────────────────────────────────────
 
 export async function handleGetWebhooks(
-  _request: FastifyRequest,
+  request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
-  const result = await webhookService.getAllWebhooks();
+  const result = await webhookService.getAllWebhooks(request.user.id);
   success(reply, result);
 }
 
@@ -25,7 +25,7 @@ export async function handleCreateWebhook(
     throw Errors.validationError(parsed.error.flatten().fieldErrors);
   }
 
-  const result = await webhookService.createWebhook(parsed.data);
+  const result = await webhookService.createWebhook(parsed.data, request.user.id);
   success(reply, result, 201);
 }
 
@@ -42,7 +42,7 @@ export async function handleUpdateWebhook(
     throw Errors.validationError(parsed.error.flatten().fieldErrors);
   }
 
-  const result = await webhookService.updateWebhook(id, parsed.data);
+  const result = await webhookService.updateWebhook(id, parsed.data, request.user.id);
   success(reply, result);
 }
 
@@ -53,6 +53,6 @@ export async function handleDeleteWebhook(
   reply: FastifyReply,
 ): Promise<void> {
   const { id } = request.params;
-  const result = await webhookService.deleteWebhook(id);
+  const result = await webhookService.deleteWebhook(id, request.user.id);
   success(reply, result);
 }

@@ -16,7 +16,7 @@ export async function handleCreateSession(
   reply: FastifyReply,
 ): Promise<void> {
   const { name, phoneNumber } = request.body;
-  const result = await sessionService.createSession(name, phoneNumber);
+  const result = await sessionService.createSession(name, phoneNumber, request.user.id);
   success(reply, result, 201);
 }
 
@@ -27,7 +27,7 @@ export async function handleVerifyCode(
   reply: FastifyReply,
 ): Promise<void> {
   const { sessionId, phoneCode, phoneCodeHash } = request.body;
-  const result = await sessionService.verifyCode(sessionId, phoneCode, phoneCodeHash);
+  const result = await sessionService.verifyCode(sessionId, phoneCode, phoneCodeHash, request.user.id);
   success(reply, result);
 }
 
@@ -38,7 +38,7 @@ export async function handleVerifyPassword(
   reply: FastifyReply,
 ): Promise<void> {
   const { sessionId, password } = request.body;
-  const result = await sessionService.verifyPassword(sessionId, password);
+  const result = await sessionService.verifyPassword(sessionId, password, request.user.id);
   success(reply, result);
 }
 
@@ -49,17 +49,17 @@ export async function handleImportSession(
   reply: FastifyReply,
 ): Promise<void> {
   const { name, sessionString } = request.body;
-  const result = await sessionService.importSession(name, sessionString);
+  const result = await sessionService.importSession(name, sessionString, request.user.id);
   success(reply, result, 201);
 }
 
 // ─── Get Sessions ────────────────────────────────────────────────
 
 export async function handleGetSessions(
-  _request: FastifyRequest,
+  request: FastifyRequest,
   reply: FastifyReply,
 ): Promise<void> {
-  const sessions = await sessionService.getSessions();
+  const sessions = await sessionService.getSessions(request.user.id);
   success(reply, sessions);
 }
 
@@ -69,7 +69,7 @@ export async function handleGetSession(
   request: FastifyRequest<{ Params: SessionIdParams }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const session = await sessionService.getSession(request.params.id);
+  const session = await sessionService.getSession(request.params.id, request.user.id);
   success(reply, session);
 }
 
@@ -79,7 +79,7 @@ export async function handleDeleteSession(
   request: FastifyRequest<{ Params: SessionIdParams }>,
   reply: FastifyReply,
 ): Promise<void> {
-  await sessionService.deleteSession(request.params.id);
+  await sessionService.deleteSession(request.params.id, request.user.id);
   success(reply, { message: 'Session deleted' });
 }
 
@@ -89,7 +89,7 @@ export async function handleConnectSession(
   request: FastifyRequest<{ Params: SessionIdParams }>,
   reply: FastifyReply,
 ): Promise<void> {
-  await sessionService.connectSession(request.params.id);
+  await sessionService.connectSession(request.params.id, request.user.id);
   success(reply, { message: 'Session connected' });
 }
 
@@ -99,7 +99,7 @@ export async function handleDisconnectSession(
   request: FastifyRequest<{ Params: SessionIdParams }>,
   reply: FastifyReply,
 ): Promise<void> {
-  await sessionService.disconnectSession(request.params.id);
+  await sessionService.disconnectSession(request.params.id, request.user.id);
   success(reply, { message: 'Session disconnected' });
 }
 
@@ -109,6 +109,6 @@ export async function handleExportSession(
   request: FastifyRequest<{ Params: SessionIdParams }>,
   reply: FastifyReply,
 ): Promise<void> {
-  const result = await sessionService.exportSession(request.params.id);
+  const result = await sessionService.exportSession(request.params.id, request.user.id);
   success(reply, result);
 }
