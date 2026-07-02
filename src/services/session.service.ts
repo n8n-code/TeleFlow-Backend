@@ -271,14 +271,14 @@ export async function deleteSession(id: string, userId: string): Promise<void> {
 
 // ─── Connect Session ─────────────────────────────────────────────
 
-export async function connectSession(id: string, userId: string): Promise<void> {
+export async function connectSession(id: string, userId?: string): Promise<void> {
   if (sessionManager.isConnected(id)) {
     log.debug({ sessionId: id }, 'Session already connected');
     return;
   }
 
   const session = await prisma.session.findUnique({ where: { id } });
-  if (!session || session.userId !== userId) throw Errors.sessionNotFound(id);
+  if (!session || (userId !== undefined && session.userId !== userId)) throw Errors.sessionNotFound(id);
   if (!session.sessionString) {
     throw Errors.badRequest('Session has no stored session string — login first');
   }
